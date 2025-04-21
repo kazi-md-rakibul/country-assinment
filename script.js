@@ -1,4 +1,3 @@
-// DOM Elements
 const searchInput = document.getElementById('search-input');
 const searchButton = document.getElementById('search-button');
 const countriesContainer = document.getElementById('countries-container');
@@ -7,59 +6,54 @@ const modal = document.getElementById('country-modal');
 const closeButton = document.querySelector('.close-button');
 const modalBody = document.getElementById('modal-body');
 
-// API URLs
 const COUNTRIES_API_URL = 'https://restcountries.com/v3.1';
 const WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather';
-const WEATHER_API_KEY = '3c3246aa63553dcfd0e3bb13ccc77dc4'; // Get your own API key from OpenWeatherMap
+const WEATHER_API_KEY = '3c3246aa63553dcfd0e3bb13ccc77dc4';
 
-// Event Listeners
-window.addEventListener('load', () => {
-    // Load random countries on page load
+window.addEventListener('load', function() {
     fetchRandomCountries();
 });
 
-searchButton.addEventListener('click', () => {
+searchButton.addEventListener('click', function() {
     searchCountry();
 });
 
-searchInput.addEventListener('keypress', (e) => {
+searchInput.addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         searchCountry();
     }
 });
 
-closeButton.addEventListener('click', () => {
+closeButton.addEventListener('click', function() {
     modal.style.display = 'none';
     document.body.style.overflow = 'auto';
 });
 
-window.addEventListener('click', (e) => {
+window.addEventListener('click', function(e) {
     if (e.target === modal) {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
     }
 });
 
-// Functions
 function fetchRandomCountries() {
     showLoading();
     
-    fetch(`${COUNTRIES_API_URL}/all`)
-        .then(response => {
+    fetch(COUNTRIES_API_URL + '/all')
+        .then(function(response) {
             if (!response.ok) {
                 throw new Error('Failed to fetch countries');
             }
             return response.json();
         })
-        .then(countries => {
+        .then(function(countries) {
             const randomCountries = getRandomItems(countries, 8);
             countriesContainer.innerHTML = '';
             
-            randomCountries.forEach(country => {
-                displayCountryCard(country);
-            });
-        })
-        .then(() => {
+            for (let i = 0; i < randomCountries.length; i++) {
+                displayCountryCard(randomCountries[i]);
+            }
+            
             hideLoading();
         });
 }
@@ -74,21 +68,20 @@ function searchCountry() {
     
     showLoading();
     
-    fetch(`${COUNTRIES_API_URL}/name/${searchTerm}`)
-        .then(response => {
+    fetch(COUNTRIES_API_URL + '/name/' + searchTerm)
+        .then(function(response) {
             if (!response.ok) {
                 throw new Error('Country not found');
             }
             return response.json();
         })
-        .then(countries => {
+        .then(function(countries) {
             countriesContainer.innerHTML = '';
             
-            countries.forEach(country => {
-                displayCountryCard(country);
-            });
-        })
-        .then(() => {
+            for (let i = 0; i < countries.length; i++) {
+                displayCountryCard(countries[i]);
+            }
+            
             hideLoading();
         });
 }
@@ -105,19 +98,19 @@ function displayCountryCard(country) {
         const currencyCode = Object.keys(country.currencies)[0];
         if (currencyCode) {
             const currency = country.currencies[currencyCode];
-            currencyText = `${currency.name} (${currency.symbol || currencyCode})`;
+            currencyText = currency.name + ' (' + (currency.symbol || currencyCode) + ')';
         }
     }
     
     if (country.capital && country.capital[0]) {
-        fetch(`${WEATHER_API_URL}?q=${country.capital[0]},${country.cca2}&appid=${WEATHER_API_KEY}&units=metric`)
-            .then(response => {
+        fetch(WEATHER_API_URL + '?q=' + country.capital[0] + ',' + country.cca2 + '&appid=' + WEATHER_API_KEY + '&units=metric')
+            .then(function(response) {
                 if (!response.ok) {
                     return null;
                 }
                 return response.json();
             })
-            .then(weatherData => {
+            .then(function(weatherData) {
                 card.innerHTML = `
                     <div class="flag-container">
                         <img src="${country.flags.png}" alt="${country.name.common} flag">
@@ -138,13 +131,21 @@ function displayCountryCard(country) {
                                 </div>
                             </div>
                         ` : ''}
-                        <button class="details-btn" data-country='${JSON.stringify(country)}' data-weather='${weatherData ? JSON.stringify(weatherData) : ""}'>More Details</button>
+                        <button class="details-btn">More Details</button>
                     </div>
                 `;
                 
                 const detailsBtn = card.querySelector('.details-btn');
-                detailsBtn.addEventListener('click', () => {
-                    showCountryDetails(JSON.parse(detailsBtn.dataset.country), weatherData ? JSON.parse(detailsBtn.dataset.weather) : null);
+                detailsBtn.setAttribute('data-country', JSON.stringify(country));
+                if (weatherData) {
+                    detailsBtn.setAttribute('data-weather', JSON.stringify(weatherData));
+                }
+                
+                detailsBtn.addEventListener('click', function() {
+                    const countryData = JSON.parse(this.getAttribute('data-country'));
+                    const weatherInfo = this.hasAttribute('data-weather') ? JSON.parse(this.getAttribute('data-weather')) : null;
+                    
+                    showCountryDetails(countryData, weatherInfo);
                 });
                 
                 countriesContainer.appendChild(card);
@@ -161,13 +162,16 @@ function displayCountryCard(country) {
                 <p><i class="fas fa-users"></i> Population: ${formatNumber(country.population)}</p>
                 <p><i class="fas fa-language"></i> Language: ${primaryLanguage}</p>
                 <p><i class="fas fa-money-bill-wave"></i> Currency: ${currencyText}</p>
-                <button class="details-btn" data-country='${JSON.stringify(country)}'>More Details</button>
+                <button class="details-btn">More Details</button>
             </div>
         `;
         
         const detailsBtn = card.querySelector('.details-btn');
-        detailsBtn.addEventListener('click', () => {
-            showCountryDetails(JSON.parse(detailsBtn.dataset.country), null);
+        detailsBtn.setAttribute('data-country', JSON.stringify(country));
+        
+        detailsBtn.addEventListener('click', function() {
+            const countryData = JSON.parse(this.getAttribute('data-country'));
+            showCountryDetails(countryData, null);
         });
         
         countriesContainer.appendChild(card);
@@ -176,13 +180,21 @@ function displayCountryCard(country) {
 
 function showCountryDetails(country, weatherData) {
     const borders = country.borders ? country.borders.join(', ') : 'None';
+    
     const languages = country.languages ? Object.values(country.languages).join(', ') : 'N/A';
     
     let currencies = 'N/A';
     if (country.currencies) {
-        currencies = Object.values(country.currencies)
-            .map(currency => `${currency.name} (${currency.symbol || ''})`)
-            .join(', ');
+        let currencyArray = [];
+        const currencyCodes = Object.keys(country.currencies);
+        
+        for (let i = 0; i < currencyCodes.length; i++) {
+            const code = currencyCodes[i];
+            const currency = country.currencies[code];
+            currencyArray.push(currency.name + ' (' + (currency.symbol || '') + ')');
+        }
+        
+        currencies = currencyArray.join(', ');
     }
     
     modalBody.innerHTML = `
@@ -280,9 +292,11 @@ function showCountryDetails(country, weatherData) {
     document.body.style.overflow = 'hidden';
 }
 
-// Helper Functions
 function getRandomItems(array, count) {
-    const shuffled = [...array].sort(() => 0.5 - Math.random());
+    const shuffled = [...array].sort(function() {
+        return 0.5 - Math.random();
+    });
+    
     return shuffled.slice(0, count);
 }
 
@@ -299,7 +313,6 @@ function hideLoading() {
 }
 
 function showError(message) {
-    // Clear container and show error message
     countriesContainer.innerHTML = `
         <div class="error-message">
             <i class="fas fa-exclamation-circle"></i>
